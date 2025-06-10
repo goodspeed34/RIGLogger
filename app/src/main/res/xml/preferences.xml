@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory app:title="@string/pref_cloudlog_configuration" app:iconSpaceReserved="false">
+        <EditTextPreference
+            app:key="cloudlog_url"
+            app:title="@string/pref_cloudlog_url"
+            app:summary="@string/pref_enter_the_url_for_cloudlog"
+            app:dialogTitle="@string/pref_enter_the_url_for_cloudlog"
+            app:dialogMessage="@string/pref_please_enter_the_url_ending_with_index_php_if_no_rewriting_rules_applied"
+            app:singleLineTitle="true"
+            app:defaultValue="https://example.org/cloudlog/index.php"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true"
+            >
+        </EditTextPreference>
+        <EditTextPreference
+            app:key="cloudlog_apikey"
+            app:title="@string/pref_cloudlog_api_key"
+            app:useSimpleSummaryProvider="true"
+            app:dialogTitle="@string/pref_enter_the_api_key_for_cloudlog"
+            app:dialogMessage="@string/pref_please_enter_the_api_key_typically_starting_with_cl"
+            app:defaultValue="cl1234567890abcd"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="true">
+        </EditTextPreference>
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

@@ -3,4 +3,11 @@
     <string name="title_home">Logger</string>
     <string name="title_rigctl">RIG Control</string>
     <string name="title_settings">Settings</string>
+    <string name="pref_cloudlog_configuration">Cloudlog Configuration</string>
+    <string name="pref_cloudlog_url">Cloudlog URL</string>
+    <string name="pref_enter_the_url_for_cloudlog">Enter the URL for Cloudlog</string>
+    <string name="pref_please_enter_the_url_ending_with_index_php_if_no_rewriting_rules_applied">Please enter the URL ending with /index.php if no rewriting rules applied.</string>
+    <string name="pref_cloudlog_api_key">Cloudlog API Key</string>
+    <string name="pref_enter_the_api_key_for_cloudlog">Enter the API Key for Cloudlog</string>
+    <string name="pref_please_enter_the_api_key_typically_starting_with_cl">Please enter the API Key, typically starting with `cl\'.</string>
 </resources>

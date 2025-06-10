@@ -4,4 +4,11 @@
     <string name="title_home">日志记录</string>
     <string name="title_rigctl">电台控制</string>
     <string name="title_settings">程序配置</string>
+    <string name="pref_cloudlog_configuration">Cloudlog 配置</string>
+    <string name="pref_cloudlog_url">Cloudlog URL</string>
+    <string name="pref_enter_the_url_for_cloudlog">输入 Cloudlog 服务器 URL</string>
+    <string name="pref_please_enter_the_url_ending_with_index_php_if_no_rewriting_rules_applied">请输入 Cloudlog 服务器 URL，没有配置重写的情况下一般为 /index.php 结尾。</string>
+    <string name="pref_cloudlog_api_key">Cloudlog API 密钥</string>
+    <string name="pref_enter_the_api_key_for_cloudlog">输入 Cloudlog 服务器的 API 密钥</string>
+    <string name="pref_please_enter_the_api_key_typically_starting_with_cl">请输入 API 密钥，通常以 cl 开始。</string>
 </resources>

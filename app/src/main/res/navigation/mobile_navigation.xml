@@ -18,7 +18,7 @@
 
     <fragment
         android:id="@+id/navigation_settings"
-        android:name="cn.rad1o.riglogger.ui.settings.NotificationsFragment"
+        android:name="cn.rad1o.riglogger.ui.settings.SettingsFragment"
         android:label="@string/title_settings"
         tools:layout="@layout/fragment_settings" />
 </navigation>

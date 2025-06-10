@@ -8,6 +8,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
 import cn.rad1o.riglogger.databinding.FragmentLoggerBinding
 
 
@@ -30,7 +31,20 @@ class LoggerFragment : Fragment() {
         val webView: WebView = binding.webviewCloudlog
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = WebViewClient()
-        webView.loadUrl("https://qso.rad1o.cn/index.php")
+
+        var cloudlogUrl: String? = context?.let {
+            PreferenceManager
+                .getDefaultSharedPreferences(it)
+                .getString("cloudlog_url", null)
+        }
+
+        if (cloudlogUrl != null) {
+            webView.loadUrl(cloudlogUrl)
+        } else {
+            webView.loadData(
+                "<p>Unable to find a URL to visit, please configure it in settings.</p>",
+                "text/html", "UTF-8")
+        }
 
         return root
     }

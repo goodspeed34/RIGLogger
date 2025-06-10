@@ -5,9 +5,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
+import androidx.preference.PreferenceFragmentCompat
+import cn.rad1o.riglogger.R
 import cn.rad1o.riglogger.databinding.FragmentSettingsBinding
 
-class NotificationsFragment : Fragment() {
+class SettingsPreferenceFragment : PreferenceFragmentCompat() {
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        setPreferencesFromResource(R.xml.preferences, rootKey)
+    }
+}
+
+class SettingsFragment : Fragment() {
 
     private var _binding: FragmentSettingsBinding? = null
 
@@ -24,6 +33,13 @@ class NotificationsFragment : Fragment() {
         val root: View = binding.root
 
         return root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        childFragmentManager.commit {
+            replace(R.id.preferences_container, SettingsPreferenceFragment())
+        }
     }
 
     override fun onDestroyView() {
