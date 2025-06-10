@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RIGLogger</string>
+    <string name="title_home">日志记录</string>
+    <string name="title_rigctl">电台控制</string>
+    <string name="title_settings">程序配置</string>
+</resources>
