@@ -39,7 +39,10 @@ android {
 }
 
 dependencies {
+    implementation(libs.usb.serial.for1.android)
+
     implementation(libs.androidx.preference.ktx)
+    implementation(libs.androidx.swiperefreshlayout)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
