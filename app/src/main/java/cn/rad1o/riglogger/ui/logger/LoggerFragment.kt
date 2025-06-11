@@ -18,6 +18,7 @@
 
 package cn.rad1o.riglogger.ui.logger
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -41,6 +42,7 @@ class LoggerFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    @SuppressLint("SetJavaScriptEnabled") /* can't function without JavaScript ofc... */
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
