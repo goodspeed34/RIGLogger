@@ -1,6 +1,7 @@
 package cn.rad1o.riglogger.ui.logger
 
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,8 @@ class LoggerFragment : Fragment() {
 
     private var _binding: FragmentLoggerBinding? = null
 
+    lateinit var webView: WebView
+
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
@@ -28,11 +31,38 @@ class LoggerFragment : Fragment() {
         _binding = FragmentLoggerBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val webView: WebView = binding.webviewCloudlog
-        webView.settings.javaScriptEnabled = true
-        webView.webViewClient = WebViewClient()
+        val swipeRefresh = binding.swipeRefresh
 
-        var cloudlogUrl: String? = context?.let {
+        webView = binding.webviewCloudlog
+        webView.settings.javaScriptEnabled = true
+        swipeRefresh.setOnRefreshListener { webView.reload() }
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                swipeRefresh.isRefreshing = false
+            }
+        }
+
+        /* Allowing the back button to properly function,
+           https://stackoverflow.com/questions/6077141. */
+        webView.setOnKeyListener(object : View.OnKeyListener {
+            override fun onKey(v: View, keyCode: Int, event: KeyEvent): Boolean {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    val webView = v as WebView
+
+                    when (keyCode) {
+                        KeyEvent.KEYCODE_BACK -> if (webView.canGoBack()) {
+                            webView.goBack()
+                            return true
+                        }
+                    }
+                }
+
+                return false
+            }
+        })
+
+        val cloudlogUrl: String? = context?.let {
             PreferenceManager
                 .getDefaultSharedPreferences(it)
                 .getString("cloudlog_url", null)
