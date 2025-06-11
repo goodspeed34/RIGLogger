@@ -11,4 +11,7 @@
     <string name="pref_cloudlog_api_key">Cloudlog API 密钥</string>
     <string name="pref_enter_the_api_key_for_cloudlog">输入 Cloudlog 服务器的 API 密钥</string>
     <string name="pref_please_enter_the_api_key_typically_starting_with_cl">请输入 API 密钥，通常以 cl 开始。</string>
+    <string name="serial_no_driver">串口没有与之对应的驱动。</string>
+    <string name="serial_connect_no_access">无法访问串口。</string>
+    <string name="serial_connect_failed">连接串口失败：</string>
 </resources>
