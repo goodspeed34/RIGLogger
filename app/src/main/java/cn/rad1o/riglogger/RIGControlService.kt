@@ -27,8 +27,10 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.MutableLiveData
+import cn.rad1o.riglogger.rigctl.BaseRig
+import cn.rad1o.riglogger.rigctl.XieGuRig
+import cn.rad1o.riglogger.rigport.CableConnector
 import cn.rad1o.riglogger.rigport.CableSerialPort
-import cn.rad1o.riglogger.rigport.OnConnectorStateChanged
 import kotlinx.coroutines.*
 
 class RIGControlService : Service() {
@@ -40,6 +42,8 @@ class RIGControlService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     var snackMessage = MutableLiveData<String>()
+
+    private var rig: BaseRig? = null
 
     inner class LocalBinder : Binder() {
         fun getService(): RIGControlService = this@RIGControlService
@@ -72,26 +76,27 @@ class RIGControlService : Service() {
             stopSelf()
         }
 
-        val serialPort = ports[0]
-        val cableSerialPort = CableSerialPort(applicationContext, serialPort, 19200, 8, 1, 0,
-            object : OnConnectorStateChanged {
-                override fun onDisconnected() {
-                    Log.e(TAG, "Serial port disconnected, bye")
-                    stopSelf()
-                }
+        rig = XieGuRig(40)
+        if (rig != null) {
+            val cableConnector = CableConnector(
+                applicationContext,
+                ports[0],
+                19200,
+                rig
+            )
 
-                override fun onConnected() {
-                    Log.i(TAG, "Serial port connected")
-                }
+            cableConnector.connect()
+            rig!!.setConnector(cableConnector)
 
-                override fun onRunError(message: String?) {
-                    Log.e(TAG, "Failed to connect the serial port: $message")
-                }
-            })
+            if (rig?.isConnected() == true) {
+                Log.i(TAG, "RIG connected")
+            } else {
+                Log.i(TAG, "RIG not connected")
+            }
 
-        if (!cableSerialPort.connect()) {
-            Log.e(TAG, "Failed to connect to the serial port: timed out")
-            stopSelf()
+            rig!!.mutFreq.observeForever { freq ->
+                Log.d("RIGControlService", "Observed frequency change: $freq")
+            }
         }
     }
 

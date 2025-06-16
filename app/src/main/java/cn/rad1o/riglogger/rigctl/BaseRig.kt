@@ -45,8 +45,17 @@ package cn.rad1o.riglogger.rigctl
 import androidx.lifecycle.MutableLiveData
 import cn.rad1o.riglogger.rigport.BaseRigConnector
 
-
 abstract class BaseRig {
+    companion object {
+        fun byteToStr(data: ByteArray): String {
+            val s = StringBuilder()
+            for (i in data.indices) {
+                s.append(String.format("%02x ", data[i].toInt() and 0xff))
+            }
+            return s.toString()
+        }
+    }
+
     private var freq: Long = 439950000 /* What is this? ;-) */
     var mutFreq: MutableLiveData<Long> = MutableLiveData()
 
@@ -80,14 +89,6 @@ abstract class BaseRig {
         this.onRigStateChanged?.onFreqChanged(freq)
     }
 
-    fun byteToStr(data: ByteArray): String {
-        val s = StringBuilder()
-        for (i in data.indices) {
-            s.append(String.format("%02x ", data[i].toInt() and 0xff))
-        }
-        return s.toString()
-    }
-
     fun getOnRigStateChanged(): OnRigStateChanged? { return onRigStateChanged }
     fun setOnRigStateChanged(onRigStateChanged: OnRigStateChanged?)
     { this.onRigStateChanged = onRigStateChanged }
@@ -99,7 +100,7 @@ abstract class BaseRig {
     fun setBaudRate(baudRate: Int) { this.baudRate = baudRate }
 
     fun getConnector(): BaseRigConnector? { return connector }
-    fun setConnector(connector: BaseRigConnector?) {
+    fun setConnector(connector: BaseRigConnector) {
         this.connector = connector
 
         this.connector!!.setOnRigStateChanged(onRigStateChanged)

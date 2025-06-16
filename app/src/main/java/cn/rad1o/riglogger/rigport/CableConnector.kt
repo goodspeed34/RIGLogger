@@ -42,62 +42,53 @@
 
 package cn.rad1o.riglogger.rigport
 
-import cn.rad1o.riglogger.rigctl.OnConnectReceiveData
-import cn.rad1o.riglogger.rigctl.OnRigStateChanged
+import android.content.Context
+import android.util.Log
+import cn.rad1o.riglogger.rigctl.BaseRig
+import cn.rad1o.riglogger.rigport.CableSerialPort.SerialPort
+import com.hoho.android.usbserial.util.SerialInputOutputManager
 
 
-open class BaseRigConnector {
-    private var connected: Boolean = false
-    private var onConnectReceiveData: OnConnectReceiveData? = null
-    private var onRigStateChanged: OnRigStateChanged? = null
+class CableConnector(
+    context: Context, serialPort: SerialPort, baudRate: Int,
+    val cableConnectedRig: BaseRig?
+) : BaseRigConnector() {
 
-    private val onConnectorStateChanged: OnConnectorStateChanged =
-        object : OnConnectorStateChanged {
-            override fun onDisconnected() {
-                if (onRigStateChanged != null) {
-                    onRigStateChanged!!.onDisconnected()
-                }
-                connected = false
+    val cableSerialPort: CableSerialPort =
+        CableSerialPort(context, serialPort, baudRate, 8, 1, 0,
+            getOnConnectorStateChanged())
+
+    init {
+        cableSerialPort.ioListener = object : SerialInputOutputManager.Listener {
+            override fun onNewData(data: ByteArray) {
+                getOnConnectReceiveData().onData(data)
             }
 
-            override fun onConnected() {
-                if (onRigStateChanged != null) {
-                    onRigStateChanged!!.onConnected()
-                }
-                connected = true
-            }
-
-            override fun onRunError(message: String?) {
-                if (onRigStateChanged != null) {
-                    onRigStateChanged!!.onRunError(message)
-                }
-                connected = false
+            override fun onRunError(e: Exception) {
+                Log.e(TAG, "CableConnector error: " + e.message)
+                getOnConnectorStateChanged().onRunError("与串口失去连接：" + e.message)
             }
         }
+        //connect();
+    }
 
     @Synchronized
-    open fun sendData(data: ByteArray?) { }
-
-    fun getOnConnectReceiveData(): OnConnectReceiveData { return onConnectReceiveData!! }
-    fun setOnConnectReceiveData(receiveData: OnConnectReceiveData) {
-        onConnectReceiveData = receiveData
+    override fun sendData(data: ByteArray?) {
+        cableSerialPort.sendData(data)
     }
 
-    open fun connect() {}
-    open fun disconnect() {}
-
-    fun getOnRigStateChanged(): OnRigStateChanged { return onRigStateChanged!! }
-    fun setOnRigStateChanged(onRigStateChanged: OnRigStateChanged?) {
-        this.onRigStateChanged = onRigStateChanged
+    override fun connect() {
+        super.connect()
+        cableSerialPort.connect()
     }
 
-    fun getOnConnectorStateChanged(): OnConnectorStateChanged { return onConnectorStateChanged }
+    override fun disconnect() {
+        cableConnectedRig!!.onDisconnecting()
+        super.disconnect()
+        cableSerialPort.disconnect()
+    }
 
-    fun isConnected(): Boolean { return connected }
-
-    fun readShortBigEndianData(data: ByteArray, start: Int): Short {
-        if (data.size - start < 2) return 0
-        return (data[start].toShort().toInt() and 0xff
-                or ((data[start + 1].toShort().toInt() and 0xff) shl 8)).toShort()
+    companion object {
+        private const val TAG = "CableConnector"
     }
 }

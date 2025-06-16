@@ -65,7 +65,7 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager
 import java.io.IOException
 
 
-class CableSerialPort {
+class CableSerialPort  {
     companion object {
         const val TAG = "CableSerialPort"
         const val SEND_TIMEOUT = 2000
@@ -116,11 +116,13 @@ class CableSerialPort {
 
     private var connected = false
 
-    constructor(mContext: Context, serialPort: SerialPort,
-                baudRate: Int, dataBits: Int, stopBits: Int, parity: Int,
-                connectorStateChanged: OnConnectorStateChanged) {
-        vendorId = serialPort.vendorId
-        portNum = serialPort.portNum
+    constructor(
+        mContext: Context, serialPort: SerialPort?,
+        baudRate: Int, dataBits: Int, stopBits: Int, parity: Int,
+        connectorStateChanged: OnConnectorStateChanged
+    ) {
+        vendorId = serialPort!!.vendorId
+        portNum = serialPort!!.portNum
 
         this@CableSerialPort.baudRate = baudRate
         this@CableSerialPort.dataBits = dataBits
