@@ -42,7 +42,6 @@
 
 package cn.rad1o.riglogger.rigport
 
-import cn.rad1o.riglogger.R
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.PendingIntent
@@ -53,10 +52,10 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbManager
-import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
 import cn.rad1o.riglogger.BuildConfig
+import cn.rad1o.riglogger.R
 import com.hoho.android.usbserial.driver.CdcAcmSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
@@ -71,6 +70,25 @@ class CableSerialPort {
         const val TAG = "CableSerialPort"
         const val SEND_TIMEOUT = 2000
         const val INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID
+
+        fun listSerialPorts(context: Context): ArrayList<SerialPort> {
+            val serialPorts = ArrayList<SerialPort>()
+            val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+
+            for (device in usbManager.deviceList.values) {
+                val driver = UsbSerialProber.getDefaultProber().probeDevice(device)
+                    ?: continue
+                for (i in driver.ports.indices) {
+                    serialPorts.add(
+                        SerialPort(
+                            device.deviceId, device.vendorId,
+                            device.productId, i
+                        )
+                    )
+                }
+            }
+            return serialPorts
+        }
     }
 
     private var usbPermission = UsbPermission.Unknown
@@ -337,25 +355,6 @@ class CableSerialPort {
 
     fun setBaudRate(baudRate: Int) {
         this.baudRate = baudRate
-    }
-
-    fun listSerialPorts(context: Context): ArrayList<SerialPort> {
-        val serialPorts = ArrayList<SerialPort>()
-        val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-
-        for (device in usbManager.deviceList.values) {
-            val driver = UsbSerialProber.getDefaultProber().probeDevice(device)
-                ?: continue
-            for (i in driver.ports.indices) {
-                serialPorts.add(
-                    SerialPort(
-                        device.deviceId, device.vendorId,
-                        device.productId, i
-                    )
-                )
-            }
-        }
-        return serialPorts
     }
 
     fun isConnected(): Boolean {

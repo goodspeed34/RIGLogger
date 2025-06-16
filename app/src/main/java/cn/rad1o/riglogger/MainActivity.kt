@@ -18,7 +18,12 @@
 
 package cn.rad1o.riglogger
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -49,6 +54,20 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        val intent = Intent(this, RIGControlService::class.java)
+        val connection = object : ServiceConnection {
+            override fun onServiceConnected(
+                name: ComponentName?,
+                service: IBinder?
+            ) {
 
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+
+            }
+        }
+        startForegroundService(intent)
+        bindService(intent, connection, BIND_AUTO_CREATE)
     }
 }

@@ -4,6 +4,8 @@
 
     <!-- for connecting the cloudlog backend -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:allowBackup="true"
@@ -15,6 +17,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RIGLogger"
         tools:targetApi="31">
+
+        <service
+            android:name=".RIGControlService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="dataSync" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -25,9 +34,11 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
             <meta-data
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
     </application>
+
 </manifest>
