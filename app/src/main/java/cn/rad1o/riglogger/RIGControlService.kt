@@ -54,7 +54,7 @@ class RIGControlService : LifecycleService() {
 
     fun shutdown() {
         notificationManager.cancel(1)
-        stopForeground(true)
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
