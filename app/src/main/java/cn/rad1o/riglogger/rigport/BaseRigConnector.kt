@@ -51,7 +51,7 @@ open class BaseRigConnector {
     private var onConnectReceiveData: OnConnectReceiveData? = null
     private var onRigStateChanged: OnRigStateChanged? = null
 
-    private val onConnectorStateChanged: OnConnectorStateChanged =
+    private var onConnectorStateChanged: OnConnectorStateChanged =
         object : OnConnectorStateChanged {
             override fun onDisconnected() {
                 if (onRigStateChanged != null) {
@@ -92,6 +92,9 @@ open class BaseRigConnector {
     }
 
     fun getOnConnectorStateChanged(): OnConnectorStateChanged { return onConnectorStateChanged }
+    fun setOnConnectorStateChanged(onConnectorStateChanged: OnConnectorStateChanged) {
+        this.onConnectorStateChanged = onConnectorStateChanged
+    }
 
     fun isConnected(): Boolean { return connected }
 

@@ -65,5 +65,22 @@ enum class OperationMode(i: Int) {
                 else -> "Unknown"
             }
         }
+
+        /**
+         * Convert the enum into a mode string used in Cloudlog API.
+         */
+        fun toCloudlogMode(value: OperationMode): String {
+            return when (value) {
+                AM -> "AM"
+                FM -> "FM"
+                DV -> "DIGITALVOICE"
+                USB -> "USB"
+                LSB -> "LSB"
+                CWL -> "CW"
+                CWR -> "CW"
+                RTTYL -> "RTTY"
+                RTTYR -> "RTTY"
+            }
+        }
     }
 }

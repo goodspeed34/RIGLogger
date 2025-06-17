@@ -14,4 +14,12 @@
     <string name="serial_connect_no_access">Could not access the serial port.</string>
     <string name="serial_connect_failed">Failed to connect to the serial port: </string>
     <string name="rig_connected">RIG Connected</string>
+    <string name="rig_control_failed_due_to_network_problems">RIG control failed, network problem</string>
+    <string name="successfully_connected_to">Successfully connected to %1$s!</string>
+    <string name="rig_control_failed_port_not_found">RIG control failed, port not found</string>
+    <string name="failed_to_connect_to">Failed to connect to %1$s</string>
+    <string name="disconnected">%1$s disconnected</string>
+    <string name="error_occurred_in">Error occurred in %1$s: %2$s</string>
+    <string name="rig_control_won_t_upload_cloudlog_settings_not_found">RIG control won\'t upload: Cloudlog settings not configured</string>
+    <string name="rig_control_failed_cloudlog_returned">RIG control failed: cloudlog returned %1$d</string>
 </resources>

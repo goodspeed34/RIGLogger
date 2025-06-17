@@ -20,10 +20,10 @@ package cn.rad1o.riglogger
 
 import android.Manifest
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
@@ -33,12 +33,57 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import androidx.preference.PreferenceManager
 import cn.rad1o.riglogger.databinding.ActivityMainBinding
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.snackbar.Snackbar
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+
+    private var rigControlService: RIGControlService? = null
+    private var bound = false
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(
+            name: ComponentName?,
+            service: IBinder?
+        ) {
+            val binder = service as RIGControlService.LocalBinder
+            rigControlService = binder.getService()
+            bound = true
+
+            rigControlService?.snackbarMessage?.observe(this@MainActivity) {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+            }
+
+            val cloudlogUrl: String? = applicationContext.let {
+                PreferenceManager
+                    .getDefaultSharedPreferences(it)
+                    .getString("cloudlog_url", null)
+            }
+
+            val cloudlogApiKey: String? = applicationContext.let {
+                PreferenceManager
+                    .getDefaultSharedPreferences(it)
+                    .getString("cloudlog_apikey", null)
+            }
+
+            if ((cloudlogApiKey != null) && (cloudlogUrl != null)) {
+                rigControlService?.configureCloudlog("$cloudlogUrl/api/radio", cloudlogApiKey)
+            } else {
+                rigControlService?.snackbarMessage?.postValue(
+                    getString(R.string.rig_control_won_t_upload_cloudlog_settings_not_found)
+                )
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            bound = false
+        }
+
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,11 +91,13 @@ class MainActivity : AppCompatActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                1001 // Request code; doesn't matter here
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    1001 // Request code; doesn't matter here
+                )
+            }
         }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -69,18 +116,6 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
 
         val intent = Intent(this, RIGControlService::class.java)
-        val connection = object : ServiceConnection {
-            override fun onServiceConnected(
-                name: ComponentName?,
-                service: IBinder?
-            ) {
-
-            }
-
-            override fun onServiceDisconnected(name: ComponentName?) {
-
-            }
-        }
         startForegroundService(intent)
         bindService(intent, connection, BIND_AUTO_CREATE)
     }

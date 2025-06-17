@@ -27,25 +27,45 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.MutableLiveData
 import cn.rad1o.riglogger.rigctl.BaseRig
+import cn.rad1o.riglogger.rigctl.OnRigStateChanged
 import cn.rad1o.riglogger.rigctl.OperationMode
 import cn.rad1o.riglogger.rigctl.XieGuRig
 import cn.rad1o.riglogger.rigport.CableConnector
 import cn.rad1o.riglogger.rigport.CableSerialPort
+import com.google.gson.Gson
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Locale
 
 class RIGControlService : LifecycleService() {
     companion object {
         const val TAG = "RIGControlService"
         const val CHANID = "RIGControlService"
+        const val DEFAULT_RETRIES = 3
     }
 
     private val binder = LocalBinder()
     private lateinit var notificationManager: NotificationManager
     private lateinit var notification: Notification
+    val snackbarMessage = MutableLiveData<String>()
 
     private var rig: BaseRig? = null
-    inner class LocalBinder : Binder()
+    private var retries = DEFAULT_RETRIES
+
+    private var clConfigured = false
+    private var clApiEndpoint = ""
+    private var clApiKey = ""
+
+    inner class LocalBinder : Binder() {
+        fun getService(): RIGControlService = this@RIGControlService
+    }
 
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
@@ -58,11 +78,26 @@ class RIGControlService : LifecycleService() {
         stopSelf()
     }
 
+    fun configureCloudlog(endpoint: String, apiKey: String) {
+        clApiEndpoint = endpoint
+        clApiKey = apiKey
+        clConfigured = true
+    }
+
     private fun updateNotification() {
+        var flagText = ""
+
+        if (!clConfigured) {
+            flagText = "(NOLOG)"
+        } else if (retries < DEFAULT_RETRIES) {
+            flagText = "(RETRY)"
+        }
+
         val text = String.format(Locale.US,
-            "FREQ %,.1f kHz MODE %s",
+            "FREQ %,.1f kHz MODE %s %s",
             rig!!.getFreq() / 1000.0,
-            OperationMode.toHumanReadable(rig!!.getMode())
+            OperationMode.toHumanReadable(rig!!.getMode()),
+            flagText
         )
 
         notification = NotificationCompat.Builder(this, CHANID)
@@ -73,6 +108,56 @@ class RIGControlService : LifecycleService() {
             .build()
 
         notificationManager.notify(1, notification)
+    }
+
+    private fun updateCloudlogRadioInfo() {
+        if (!clConfigured) return
+        val data = mapOf(
+            "key" to clApiKey,
+            "radio" to "${rig!!.getName()} (RIGLogger)",
+            "frequency" to rig!!.getFreq(),
+            "mode" to OperationMode.toCloudlogMode(rig!!.getMode())
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val client = OkHttpClient()
+
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val body = Gson().toJson(data).toString()
+
+            val request = Request.Builder()
+                .url(clApiEndpoint)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .post(body.toRequestBody(mediaType))
+                .build()
+
+            try {
+                val response = client.newCall(request).execute()
+                if (response.code != 200) {
+                    Log.e(TAG, "HTTP ${response.code}: ${response.body?.string()}")
+                    if (--retries <= 0) {
+                        Log.e(TAG, "Networking error, exceeded max number of retries")
+                        snackbarMessage.postValue(
+                            getString(R.string.rig_control_failed_cloudlog_returned, response.code)
+                        )
+                        shutdown()
+                    }
+                } else {
+                    retries = DEFAULT_RETRIES
+                    Log.d(TAG, "HTTP ${response.code}: ${response.body?.string()}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (--retries <= 0) {
+                    Log.e(TAG, "Networking error, exceeded max number of retries")
+                    snackbarMessage.postValue(
+                        getString(R.string.rig_control_failed_due_to_network_problems)
+                    )
+                    shutdown()
+                }
+            }
+        }
     }
 
     private fun startForegroundService() {
@@ -103,6 +188,7 @@ class RIGControlService : LifecycleService() {
         val ports = CableSerialPort.listSerialPorts(applicationContext)
         if (ports.isEmpty()) {
             Log.e(TAG, "Failed to find a serial port to connect")
+            snackbarMessage.postValue(getString(R.string.rig_control_failed_port_not_found))
             shutdown()
             return
         }
@@ -119,23 +205,54 @@ class RIGControlService : LifecycleService() {
             cableConnector.connect()
             rig!!.setConnector(cableConnector)
 
+            cableConnector.setOnRigStateChanged(object : OnRigStateChanged {
+                override fun onDisconnected() {
+                    snackbarMessage.postValue(
+                        getString(R.string.disconnected, rig!!.getName())
+                    )
+                    shutdown()
+                }
+
+                override fun onConnected() {
+                    snackbarMessage.postValue(
+                        getString(R.string.successfully_connected_to, rig!!.getName())
+                    )
+                }
+
+                override fun onRunError(message: String?) {
+                    var actualMessage = ""
+                    if (message == null)
+                        actualMessage = "?"
+                    else actualMessage = message
+                    snackbarMessage.postValue(
+                        getString(R.string.error_occurred_in, rig!!.getName(), actualMessage)
+                    )
+                    shutdown()
+                }
+            })
+
             if (rig?.isConnected() == true) {
                 Log.i(TAG, "RIG connected")
             } else {
                 Log.i(TAG, "RIG not connected")
+                snackbarMessage.postValue(getString(R.string.failed_to_connect_to, rig!!.getName()))
                 shutdown()
             }
 
             rig!!.mutFreq.observe(this) { freq ->
                 Log.d(TAG, "Observed frequency change: $freq")
                 updateNotification()
+                updateCloudlogRadioInfo()
             }
 
             rig!!.mutMode.observe(this) { mode ->
                 Log.d(TAG, "Observed mode change: ${OperationMode.toHumanReadable(mode)}")
                 updateNotification()
+                updateCloudlogRadioInfo()
             }
         }
+
+        snackbarMessage.postValue(getString(R.string.successfully_connected_to, rig!!.getName()))
     }
 
     override fun onCreate() {

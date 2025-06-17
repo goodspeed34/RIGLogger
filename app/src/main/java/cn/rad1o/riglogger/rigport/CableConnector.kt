@@ -66,7 +66,8 @@ class CableConnector(
 
             override fun onRunError(e: Exception) {
                 Log.e(TAG, "CableConnector error: " + e.message)
-                getOnConnectorStateChanged().onRunError("与串口失去连接：" + e.message)
+                getOnConnectorStateChanged()
+                    .onRunError("Lost connection to the serial port：" + e.message)
             }
         }
         //connect();
