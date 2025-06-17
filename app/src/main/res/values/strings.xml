@@ -13,4 +13,5 @@
     <string name="serial_no_driver">Serial port doesn\'t have a driver attached.</string>
     <string name="serial_connect_no_access">Could not access the serial port.</string>
     <string name="serial_connect_failed">Failed to connect to the serial port: </string>
+    <string name="rig_connected">RIG Connected</string>
 </resources>

@@ -18,51 +18,81 @@
 
 package cn.rad1o.riglogger
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.Service
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.LifecycleService
 import cn.rad1o.riglogger.rigctl.BaseRig
+import cn.rad1o.riglogger.rigctl.OperationMode
 import cn.rad1o.riglogger.rigctl.XieGuRig
 import cn.rad1o.riglogger.rigport.CableConnector
 import cn.rad1o.riglogger.rigport.CableSerialPort
-import kotlinx.coroutines.*
+import java.util.Locale
 
-class RIGControlService : Service() {
+class RIGControlService : LifecycleService() {
     companion object {
-        const val TAG = "CableSerialPort"
+        const val TAG = "RIGControlService"
+        const val CHANID = "RIGControlService"
     }
 
     private val binder = LocalBinder()
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    var snackMessage = MutableLiveData<String>()
+    private lateinit var notificationManager: NotificationManager
+    private lateinit var notification: Notification
 
     private var rig: BaseRig? = null
+    inner class LocalBinder : Binder()
 
-    inner class LocalBinder : Binder() {
-        fun getService(): RIGControlService = this@RIGControlService
+    override fun onBind(intent: Intent): IBinder {
+        super.onBind(intent)
+        return binder
     }
 
-    override fun onBind(intent: Intent): IBinder = binder
+    fun shutdown() {
+        notificationManager.cancel(1)
+        stopForeground(true)
+        stopSelf()
+    }
+
+    private fun updateNotification() {
+        val text = String.format(Locale.US,
+            "FREQ %,.1f kHz MODE %s",
+            rig!!.getFreq() / 1000.0,
+            OperationMode.toHumanReadable(rig!!.getMode())
+        )
+
+        notification = NotificationCompat.Builder(this, CHANID)
+            .setContentTitle(getString(R.string.rig_connected))
+            .setContentText(text)
+            .setSmallIcon(R.drawable.ic_logger_black_24dp)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        notificationManager.notify(1, notification)
+    }
 
     private fun startForegroundService() {
-        val chanId = "RIGControlService"
-        val chan = NotificationChannel(chanId, "RIG Control Service",
-            NotificationManager.IMPORTANCE_HIGH)
+        notificationManager =
+            getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+        val chan = NotificationChannel(CHANID, "RIG Control Service",
+            NotificationManager.IMPORTANCE_MIN)
+
+        chan.setSound(null, null)
+        chan.enableVibration(false)
+        chan.enableLights(false)
 
         getSystemService(NotificationManager::class.java).createNotificationChannel(chan)
 
-        val notification = NotificationCompat.Builder(this, chanId)
+        notification = NotificationCompat.Builder(this, CHANID)
             .setContentTitle("RIG Control Service Running")
-            .setContentText("Current frequency at 1 MHz")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentText("Starting...")
+            .setSmallIcon(R.drawable.ic_logger_black_24dp)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
         Log.e("RIGControlService", "Service is starting...")
@@ -71,9 +101,10 @@ class RIGControlService : Service() {
 
     private fun initRigConn() {
         val ports = CableSerialPort.listSerialPorts(applicationContext)
-        if (!(ports.size >= 0)) {
+        if (ports.isEmpty()) {
             Log.e(TAG, "Failed to find a serial port to connect")
-            stopSelf()
+            shutdown()
+            return
         }
 
         rig = XieGuRig(40)
@@ -92,10 +123,17 @@ class RIGControlService : Service() {
                 Log.i(TAG, "RIG connected")
             } else {
                 Log.i(TAG, "RIG not connected")
+                shutdown()
             }
 
-            rig!!.mutFreq.observeForever { freq ->
-                Log.d("RIGControlService", "Observed frequency change: $freq")
+            rig!!.mutFreq.observe(this) { freq ->
+                Log.d(TAG, "Observed frequency change: $freq")
+                updateNotification()
+            }
+
+            rig!!.mutMode.observe(this) { mode ->
+                Log.d(TAG, "Observed mode change: ${OperationMode.toHumanReadable(mode)}")
+                updateNotification()
             }
         }
     }

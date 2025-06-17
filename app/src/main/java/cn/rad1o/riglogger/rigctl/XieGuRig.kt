@@ -42,7 +42,6 @@
 
 package cn.rad1o.riglogger.rigctl
 
-import android.R
 import android.util.Log
 import java.util.Timer
 import java.util.TimerTask
@@ -51,22 +50,22 @@ import java.util.TimerTask
 class XieGuRig(civAddress: Int) : BaseRig() {
     private val ctrAddress = 0xE0
     private var dataBuffer = ByteArray(0)
-    private var readFreqTimer: Timer? = Timer()
+    private var readStatusTimer: Timer? = Timer()
 
     private fun readTask(): TimerTask {
         return object : TimerTask() {
             override fun run() {
                 try {
                     if (!isConnected()) {
-                        readFreqTimer!!.cancel()
-                        readFreqTimer!!.purge()
-                        readFreqTimer = null
+                        readStatusTimer!!.cancel()
+                        readStatusTimer!!.purge()
+                        readStatusTimer = null
                         return
                     }
 
-                    readFreqFromRig()
+                    readStatus()
                 } catch (e: Exception) {
-                    Log.e(TAG, "readFreq or meter error:" + e.message)
+                    Log.e(TAG, "Failed to update RIG information:" + e.message)
                 }
             }
         }
@@ -79,16 +78,21 @@ class XieGuRig(civAddress: Int) : BaseRig() {
         return getConnector()!!.isConnected()
     }
 
-    override fun readFrequency() {
+    override fun readStatus() {
         if (getConnector() != null) {
-            getConnector()?.sendData(IcomRigConstant.setReadFreq(ctrAddress, getCivAddress()));
+            getConnector()?.sendData(IcomRigConstant.readOperationFrequency(
+                ctrAddress, getCivAddress()
+            ))
+            getConnector()?.sendData(IcomRigConstant.readOperationMode(
+                ctrAddress, getCivAddress()
+            ))
         }
     }
 
     override fun writeFrequency() {
         if (getConnector() != null) {
             getConnector()?.sendData(
-                IcomRigConstant.setOperationFrequency(
+                IcomRigConstant.sendOperationFrequency(
                     ctrAddress, getCivAddress(), getFreq()
                 )
             );
@@ -119,6 +123,7 @@ class XieGuRig(civAddress: Int) : BaseRig() {
         if (headIndex == -1) {
             return
         }
+
         val icomCommand: IcomCommand?
         if (headIndex == 0) {
             icomCommand = IcomCommand.getCommand(ctrAddress, getCivAddress(), data)
@@ -127,6 +132,7 @@ class XieGuRig(civAddress: Int) : BaseRig() {
             System.arraycopy(data, headIndex, temp, 0, temp.size)
             icomCommand = IcomCommand.getCommand(ctrAddress, getCivAddress(), temp)
         }
+
         if (icomCommand == null) {
             return
         }
@@ -139,7 +145,14 @@ class XieGuRig(civAddress: Int) : BaseRig() {
                 }
             }
 
-            IcomRigConstant.CMD_SEND_MODE_DATA, IcomRigConstant.CMD_READ_OPERATING_MODE -> {}
+            IcomRigConstant.CMD_SEND_MODE_DATA, IcomRigConstant.CMD_READ_OPERATING_MODE -> {
+                val retData = icomCommand.getData(false)
+                val mode = OperationMode.fromIcomDef(retData[0].toInt())
+
+                if (mode == null) {
+                    Log.w(TAG, "Invalid mode ${retData[0]} received from RIG, ignored")
+                } else setMode(mode)
+            }
         }
     }
 
@@ -169,12 +182,6 @@ class XieGuRig(civAddress: Int) : BaseRig() {
         }
     }
 
-    fun readFreqFromRig() {
-        if (getConnector() != null) {
-            getConnector()!!.sendData(IcomRigConstant.setReadFreq(ctrAddress, getCivAddress()))
-        }
-    }
-
     override fun getName(): String {
         return "XIEGU 6100 series"
     }
@@ -183,7 +190,7 @@ class XieGuRig(civAddress: Int) : BaseRig() {
         Log.d(TAG, "XieGuRig 6100: Create.")
         setCivAddress(civAddress)
 
-        readFreqTimer?.schedule(readTask(), 1000, 1000)
+        readStatusTimer?.schedule(readTask(), 1000, 1000)
     }
 
     companion object {

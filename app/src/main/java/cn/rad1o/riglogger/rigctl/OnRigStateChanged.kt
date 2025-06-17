@@ -45,6 +45,5 @@ package cn.rad1o.riglogger.rigctl
 interface OnRigStateChanged {
     fun onDisconnected()
     fun onConnected()
-    fun onFreqChanged(freq: Long)
     fun onRunError(message: String?)
 }

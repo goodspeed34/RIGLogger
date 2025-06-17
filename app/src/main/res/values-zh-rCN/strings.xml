@@ -14,4 +14,5 @@
     <string name="serial_no_driver">串口没有与之对应的驱动。</string>
     <string name="serial_connect_no_access">无法访问串口。</string>
     <string name="serial_connect_failed">连接串口失败：</string>
+    <string name="rig_connected">已连接到电台</string>
 </resources>

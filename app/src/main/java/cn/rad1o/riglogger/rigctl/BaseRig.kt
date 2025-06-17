@@ -59,6 +59,9 @@ abstract class BaseRig {
     private var freq: Long = 439950000 /* What is this? ;-) */
     var mutFreq: MutableLiveData<Long> = MutableLiveData()
 
+    private var mode: OperationMode = OperationMode.FM /* What is this? ;-) */
+    var mutMode: MutableLiveData<OperationMode> = MutableLiveData()
+
     private var connector: BaseRigConnector? = null
     private var onRigStateChanged: OnRigStateChanged? = null
     private var civAddr: Int = 0
@@ -67,16 +70,10 @@ abstract class BaseRig {
     abstract fun getName(): String
     abstract fun isConnected(): Boolean
 
-    abstract fun readFrequency()
+    abstract fun readStatus()
     abstract fun writeFrequency()
 
     abstract fun onRecv(data: ByteArray)
-
-    private val onConnectReceiveData: OnConnectReceiveData = object : OnConnectReceiveData {
-        override fun onData(data: ByteArray) {
-            onRecv(data)
-        }
-    }
 
     fun getFreq(): Long { return freq }
     fun setFreq(freq: Long) {
@@ -86,7 +83,14 @@ abstract class BaseRig {
 
         mutFreq.postValue(freq)
         this.freq = freq
-        this.onRigStateChanged?.onFreqChanged(freq)
+    }
+
+    fun getMode(): OperationMode { return mode }
+    fun setMode(mode: OperationMode) {
+        if (this.mode == mode) return
+
+        mutMode.postValue(mode)
+        this.mode = mode
     }
 
     fun getOnRigStateChanged(): OnRigStateChanged? { return onRigStateChanged }
@@ -95,9 +99,6 @@ abstract class BaseRig {
 
     fun getCivAddress(): Int { return civAddr }
     fun setCivAddress(civAddress: Int) {  this.civAddr = civAddress }
-
-    fun getBaudRate(): Int { return baudRate }
-    fun setBaudRate(baudRate: Int) { this.baudRate = baudRate }
 
     fun getConnector(): BaseRigConnector? { return connector }
     fun setConnector(connector: BaseRigConnector) {

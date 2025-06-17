@@ -224,7 +224,6 @@ class IcomCommand {
             return icomCommand
         }
 
-
         /**
          * 把字节转换成short，不做小端转换！！
          *
