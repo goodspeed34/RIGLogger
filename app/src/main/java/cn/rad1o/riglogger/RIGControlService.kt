@@ -25,9 +25,9 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.MutableLiveData
 import cn.rad1o.riglogger.rigctl.BaseRig
 import cn.rad1o.riglogger.rigctl.OnRigStateChanged
 import cn.rad1o.riglogger.rigctl.OperationMode
@@ -43,6 +43,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Locale
+import android.os.Handler
+import android.os.Looper
 
 class RIGControlService : LifecycleService() {
     companion object {
@@ -54,7 +56,6 @@ class RIGControlService : LifecycleService() {
     private val binder = LocalBinder()
     private lateinit var notificationManager: NotificationManager
     private lateinit var notification: Notification
-    val snackbarMessage = MutableLiveData<String>()
 
     private var rig: BaseRig? = null
     private var retries = DEFAULT_RETRIES
@@ -76,6 +77,9 @@ class RIGControlService : LifecycleService() {
         notificationManager.cancel(1)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+
+        val intent = Intent("cn.rad1o.riglogger.ACTION_SERVICE_STOPPED")
+        sendBroadcast(intent)
     }
 
     fun configureCloudlog(endpoint: String, apiKey: String) {
@@ -138,9 +142,10 @@ class RIGControlService : LifecycleService() {
                     Log.e(TAG, "HTTP ${response.code}: ${response.body?.string()}")
                     if (--retries <= 0) {
                         Log.e(TAG, "Networking error, exceeded max number of retries")
-                        snackbarMessage.postValue(
-                            getString(R.string.rig_control_failed_cloudlog_returned, response.code)
-                        )
+                        Toast.makeText(applicationContext,
+                            getString(R.string.rig_control_failed_cloudlog_returned, response.code),
+                            Toast.LENGTH_SHORT
+                        ).show()
                         shutdown()
                     }
                 } else {
@@ -151,9 +156,10 @@ class RIGControlService : LifecycleService() {
                 e.printStackTrace()
                 if (--retries <= 0) {
                     Log.e(TAG, "Networking error, exceeded max number of retries")
-                    snackbarMessage.postValue(
-                        getString(R.string.rig_control_failed_due_to_network_problems)
-                    )
+                    Toast.makeText(applicationContext,
+                        getString(R.string.rig_control_failed_due_to_network_problems),
+                        Toast.LENGTH_SHORT
+                    ).show()
                     shutdown()
                 }
             }
@@ -188,7 +194,10 @@ class RIGControlService : LifecycleService() {
         val ports = CableSerialPort.listSerialPorts(applicationContext)
         if (ports.isEmpty()) {
             Log.e(TAG, "Failed to find a serial port to connect")
-            snackbarMessage.postValue(getString(R.string.rig_control_failed_port_not_found))
+            Toast.makeText(applicationContext,
+                getString(R.string.rig_control_failed_port_not_found),
+                Toast.LENGTH_SHORT
+            ).show()
             shutdown()
             return
         }
@@ -207,26 +216,32 @@ class RIGControlService : LifecycleService() {
 
             cableConnector.setOnRigStateChanged(object : OnRigStateChanged {
                 override fun onDisconnected() {
-                    snackbarMessage.postValue(
-                        getString(R.string.disconnected, rig!!.getName())
-                    )
+                    Toast.makeText(applicationContext,
+                        getString(R.string.disconnected, rig!!.getName()),
+                        Toast.LENGTH_SHORT
+                    ).show()
                     shutdown()
                 }
 
                 override fun onConnected() {
-                    snackbarMessage.postValue(
-                        getString(R.string.successfully_connected_to, rig!!.getName())
-                    )
+                    Toast.makeText(applicationContext,
+                        getString(R.string.successfully_connected_to, rig!!.getName()),
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
 
                 override fun onRunError(message: String?) {
                     var actualMessage = ""
-                    if (message == null)
-                        actualMessage = "?"
-                    else actualMessage = message
-                    snackbarMessage.postValue(
-                        getString(R.string.error_occurred_in, rig!!.getName(), actualMessage)
-                    )
+                    actualMessage = message ?: "?"
+
+                    Handler(Looper.getMainLooper()).post {
+                        Toast.makeText(
+                            applicationContext,
+                            getString(R.string.error_occurred_in, rig!!.getName(), actualMessage),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
                     shutdown()
                 }
             })
@@ -235,7 +250,10 @@ class RIGControlService : LifecycleService() {
                 Log.i(TAG, "RIG connected")
             } else {
                 Log.i(TAG, "RIG not connected")
-                snackbarMessage.postValue(getString(R.string.failed_to_connect_to, rig!!.getName()))
+                Toast.makeText(applicationContext,
+                    getString(R.string.failed_to_connect_to, rig!!.getName()),
+                    Toast.LENGTH_SHORT
+                ).show()
                 shutdown()
             }
 
@@ -252,11 +270,18 @@ class RIGControlService : LifecycleService() {
             }
         }
 
-        snackbarMessage.postValue(getString(R.string.successfully_connected_to, rig!!.getName()))
+        Toast.makeText(applicationContext,
+            getString(R.string.successfully_connected_to, rig!!.getName()),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     override fun onCreate() {
         super.onCreate()
+
+        val intent = Intent("cn.rad1o.riglogger.ACTION_SERVICE_STARTED")
+        sendBroadcast(intent)
+
         startForegroundService()
         initRigConn()
     }

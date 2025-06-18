@@ -19,31 +19,39 @@
 package cn.rad1o.riglogger
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import cn.rad1o.riglogger.databinding.ActivityMainBinding
+import com.google.android.material.badge.BadgeDrawable
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.snackbar.Snackbar
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var viewModel: MainViewModel
 
     private var rigControlService: RIGControlService? = null
     private var bound = false
+
+    private lateinit var badge: BadgeDrawable
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(
@@ -53,10 +61,6 @@ class MainActivity : AppCompatActivity() {
             val binder = service as RIGControlService.LocalBinder
             rigControlService = binder.getService()
             bound = true
-
-            rigControlService?.snackbarMessage?.observe(this@MainActivity) {
-                Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-            }
 
             val cloudlogUrl: String? = applicationContext.let {
                 PreferenceManager
@@ -73,13 +77,15 @@ class MainActivity : AppCompatActivity() {
             if ((cloudlogApiKey != null) && (cloudlogUrl != null)) {
                 rigControlService?.configureCloudlog("$cloudlogUrl/api/radio", cloudlogApiKey)
             } else {
-                rigControlService?.snackbarMessage?.postValue(
-                    getString(R.string.rig_control_won_t_upload_cloudlog_settings_not_found)
-                )
+                Toast.makeText(applicationContext,
+                    getString(R.string.rig_control_won_t_upload_cloudlog_settings_not_found),
+                    Toast.LENGTH_SHORT,
+                ).show()
             }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            badge.backgroundColor = getColor(R.color.error)
             bound = false
         }
 
@@ -103,6 +109,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
@@ -115,8 +123,39 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        badge = navView.getOrCreateBadge(R.id.navigation_rigctl)
+        if (viewModel.serviceStatus)
+            badge.backgroundColor = getColor(R.color.success)
+        else
+            badge.backgroundColor = getColor(R.color.error)
+        badge.isVisible = true
+
         val intent = Intent(this, RIGControlService::class.java)
-        startForegroundService(intent)
         bindService(intent, connection, BIND_AUTO_CREATE)
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?
+            ) {
+                badge.backgroundColor = getColor(R.color.error)
+                viewModel.serviceStatus = false
+                bound = false
+            }
+        }, IntentFilter("cn.rad1o.riglogger.ACTION_SERVICE_STOPPED"), RECEIVER_EXPORTED)
+
+        registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?
+            ) {
+                badge.backgroundColor = getColor(R.color.success)
+                viewModel.serviceStatus = true
+            }
+        }, IntentFilter("cn.rad1o.riglogger.ACTION_SERVICE_STARTED"), RECEIVER_EXPORTED)
     }
 }

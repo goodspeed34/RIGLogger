@@ -82,21 +82,34 @@ class LoggerFragment : Fragment() {
             }
         })
 
+        return root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         val cloudlogUrl: String? = context?.let {
             PreferenceManager
                 .getDefaultSharedPreferences(it)
                 .getString("cloudlog_url", null)
         }
 
-        if (cloudlogUrl != null) {
+        webView = binding.webviewCloudlog
+
+        if (savedInstanceState != null) {
+            webView.restoreState(savedInstanceState)
+        } else if (cloudlogUrl != null) {
             webView.loadUrl(cloudlogUrl)
         } else {
             webView.loadData(
                 "<p>Unable to find a URL to visit, please configure it in settings.</p>",
                 "text/html", "UTF-8")
         }
+    }
 
-        return root
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        webView.saveState(outState)
     }
 
     override fun onDestroyView() {
