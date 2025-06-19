@@ -26,7 +26,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import cn.rad1o.riglogger.MainActivity
@@ -124,17 +123,5 @@ class LoggerFragment : Fragment() {
         (activity as MainActivity).viewModel.loggerWebviewState = loggerWebviewState
 
         _binding = null
-    }
-
-    override fun onResume() {
-        super.onResume()
-        (activity as AppCompatActivity).supportActionBar?.hide()
-
-        /* TODO: Disable the weird switching animation here? */
-    }
-
-    override fun onStop() {
-        super.onStop()
-        (activity as AppCompatActivity).supportActionBar?.show()
     }
 }

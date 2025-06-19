@@ -1,5 +1,6 @@
 [versions]
 agp = "8.10.1"
+coordinatorlayout = "1.3.0"
 gson = "2.13.1"
 kotlin = "2.0.21"
 coreKtx = "1.16.0"
@@ -7,7 +8,7 @@ junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.5.1"
 appcompat = "1.6.1"
-material = "1.10.0"
+material = "1.14.0-alpha01"
 constraintlayout = "2.1.4"
 lifecycleLivedataKtx = "2.6.1"
 lifecycleViewmodelKtx = "2.6.1"
@@ -20,6 +21,7 @@ usbSerialForAndroid = "3.9.0"
 lifecycleService = "2.9.1"
 
 [libraries]
+androidx-coordinatorlayout = { module = "androidx.coordinatorlayout:coordinatorlayout", version.ref = "coordinatorlayout" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }

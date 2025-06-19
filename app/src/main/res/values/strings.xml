@@ -23,4 +23,11 @@
     <string name="rig_control_won_t_upload_cloudlog_settings_not_found">RIG control won\'t upload: Cloudlog settings not configured</string>
     <string name="rig_control_failed_cloudlog_returned">RIG control failed: cloudlog returned %1$d</string>
     <string name="p_unable_to_find_a_url_to_visit_please_configure_it_in_settings_p"><![CDATA[<p>Unable to find a URL to visit, please configure it in settings.</p>]]></string>
+    <string name="rig">RIG</string>
+    <string name="port">Port</string>
+    <string name="baudrate">Baudrate</string>
+    <string name="databits">Databits</string>
+    <string name="stopbits">Stopbits</string>
+    <string name="parity">Parity</string>
+    <string name="on_air">ON AIR</string>
 </resources>
