@@ -46,7 +46,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var viewModel: MainViewModel
+    lateinit var viewModel: MainViewModel
 
     private var rigControlService: RIGControlService? = null
     private var bound = false
@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -109,8 +110,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
-
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
@@ -124,14 +123,13 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
 
         badge = navView.getOrCreateBadge(R.id.navigation_rigctl)
-        if (viewModel.serviceStatus)
+        if (viewModel.isServiceRunning)
             badge.backgroundColor = getColor(R.color.success)
         else
             badge.backgroundColor = getColor(R.color.error)
         badge.isVisible = true
 
-        val intent = Intent(this, RIGControlService::class.java)
-        bindService(intent, connection, BIND_AUTO_CREATE)
+        startService()
     }
 
     override fun onStart() {
@@ -143,7 +141,7 @@ class MainActivity : AppCompatActivity() {
                 intent: Intent?
             ) {
                 badge.backgroundColor = getColor(R.color.error)
-                viewModel.serviceStatus = false
+                viewModel.isServiceRunning = false
                 bound = false
             }
         }, IntentFilter("cn.rad1o.riglogger.ACTION_SERVICE_STOPPED"), RECEIVER_EXPORTED)
@@ -154,8 +152,13 @@ class MainActivity : AppCompatActivity() {
                 intent: Intent?
             ) {
                 badge.backgroundColor = getColor(R.color.success)
-                viewModel.serviceStatus = true
+                viewModel.isServiceRunning = true
             }
         }, IntentFilter("cn.rad1o.riglogger.ACTION_SERVICE_STARTED"), RECEIVER_EXPORTED)
+    }
+
+    fun startService() {
+        val intent = Intent(this, RIGControlService::class.java)
+        bindService(intent, connection, BIND_AUTO_CREATE)
     }
 }

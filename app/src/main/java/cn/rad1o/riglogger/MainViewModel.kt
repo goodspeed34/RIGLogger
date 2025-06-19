@@ -18,8 +18,11 @@
 
 package cn.rad1o.riglogger
 
+import android.os.Bundle
 import androidx.lifecycle.ViewModel
 
 class MainViewModel: ViewModel() {
-    var serviceStatus = false
+    var isServiceRunning = false
+
+    var loggerWebviewState: Bundle? = null
 }

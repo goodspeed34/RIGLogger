@@ -29,6 +29,8 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
+import cn.rad1o.riglogger.MainActivity
+import cn.rad1o.riglogger.R
 import cn.rad1o.riglogger.databinding.FragmentLoggerBinding
 
 
@@ -96,36 +98,43 @@ class LoggerFragment : Fragment() {
 
         webView = binding.webviewCloudlog
 
-        if (savedInstanceState != null) {
-            webView.restoreState(savedInstanceState)
+        val loggerWebviewState = (activity as MainActivity).viewModel.loggerWebviewState
+        if ((loggerWebviewState) != null) {
+            webView.restoreState(loggerWebviewState)
+            webView.loadUrl(loggerWebviewState.getString("url").toString())
         } else if (cloudlogUrl != null) {
             webView.loadUrl(cloudlogUrl)
         } else {
             webView.loadData(
-                "<p>Unable to find a URL to visit, please configure it in settings.</p>",
+                getString(R.string.p_unable_to_find_a_url_to_visit_please_configure_it_in_settings_p),
                 "text/html", "UTF-8")
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        webView.saveState(outState)
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
+
+        var loggerWebviewState = (activity as MainActivity).viewModel.loggerWebviewState
+        if (loggerWebviewState == null) {
+            loggerWebviewState = Bundle()
+        }
+
+        webView.saveState(loggerWebviewState)
+        loggerWebviewState.putString("url", webView.url)
+        (activity as MainActivity).viewModel.loggerWebviewState = loggerWebviewState
+
         _binding = null
     }
 
     override fun onResume() {
         super.onResume()
-        (requireActivity() as AppCompatActivity).supportActionBar?.hide()
+        (activity as AppCompatActivity).supportActionBar?.hide()
 
         /* TODO: Disable the weird switching animation here? */
     }
 
     override fun onStop() {
         super.onStop()
-        (requireActivity() as AppCompatActivity).supportActionBar?.show()
+        (activity as AppCompatActivity).supportActionBar?.show()
     }
 }

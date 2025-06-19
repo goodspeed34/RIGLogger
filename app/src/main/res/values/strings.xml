@@ -22,4 +22,5 @@
     <string name="error_occurred_in">Error occurred in %1$s: %2$s</string>
     <string name="rig_control_won_t_upload_cloudlog_settings_not_found">RIG control won\'t upload: Cloudlog settings not configured</string>
     <string name="rig_control_failed_cloudlog_returned">RIG control failed: cloudlog returned %1$d</string>
+    <string name="p_unable_to_find_a_url_to_visit_please_configure_it_in_settings_p"><![CDATA[<p>Unable to find a URL to visit, please configure it in settings.</p>]]></string>
 </resources>
