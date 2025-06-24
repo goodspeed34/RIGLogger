@@ -45,6 +45,16 @@ package cn.rad1o.riglogger.rigctl
 import androidx.lifecycle.MutableLiveData
 import cn.rad1o.riglogger.rigport.BaseRigConnector
 
+interface OnConnectReceiveData {
+    fun onData(data: ByteArray)
+}
+
+interface OnRigStateChanged {
+    fun onDisconnected()
+    fun onConnected()
+    fun onRunError(message: String?)
+}
+
 abstract class BaseRig {
     companion object {
         fun byteToStr(data: ByteArray): String {
@@ -96,9 +106,6 @@ abstract class BaseRig {
     fun getOnRigStateChanged(): OnRigStateChanged? { return onRigStateChanged }
     fun setOnRigStateChanged(onRigStateChanged: OnRigStateChanged?)
     { this.onRigStateChanged = onRigStateChanged }
-
-    fun getCivAddress(): Int { return civAddr }
-    fun setCivAddress(civAddress: Int) {  this.civAddr = civAddress }
 
     fun getConnector(): BaseRigConnector? { return connector }
     fun setConnector(connector: BaseRigConnector) {
