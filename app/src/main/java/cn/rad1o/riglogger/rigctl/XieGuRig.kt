@@ -47,10 +47,29 @@ import java.util.Timer
 import java.util.TimerTask
 
 
-class XieGuRig(civAddress: Int) : BaseRig() {
+class XieGuRig(private val civAddress: Int) : BaseRig() {
     private val ctrAddress = 0xE0
-    private var dataBuffer = ByteArray(0)
     private var readStatusTimer: Timer? = Timer()
+
+    private val parser = IcomCommandParser(ctrAddress, civAddress) { command ->
+        when (command.commandID) {
+            IcomRigConstant.CMD_SEND_FREQUENCY_DATA, IcomRigConstant.CMD_READ_OPERATING_FREQUENCY -> {
+                val freqTemp: Long = command.getFrequency(false)
+                if (freqTemp >= 500000 && freqTemp <= 250000000) {
+                    setFreq(freqTemp)
+                }
+            }
+
+            IcomRigConstant.CMD_SEND_MODE_DATA, IcomRigConstant.CMD_READ_OPERATING_MODE -> {
+                val retData = command.getData(false)
+                val mode = OperationMode.fromIcomDef(retData[0].toInt())
+
+                if (mode == null) {
+                    Log.w(TAG, "Invalid mode ${retData[0]} received from RIG, ignored")
+                } else setMode(mode)
+            }
+        }
+    }
 
     private fun readTask(): TimerTask {
         return object : TimerTask() {
@@ -81,10 +100,10 @@ class XieGuRig(civAddress: Int) : BaseRig() {
     override fun readStatus() {
         if (getConnector() != null) {
             getConnector()?.sendData(IcomRigConstant.readOperationFrequency(
-                ctrAddress, getCivAddress()
+                ctrAddress, civAddress
             ))
             getConnector()?.sendData(IcomRigConstant.readOperationMode(
-                ctrAddress, getCivAddress()
+                ctrAddress, civAddress
             ))
         }
     }
@@ -93,107 +112,20 @@ class XieGuRig(civAddress: Int) : BaseRig() {
         if (getConnector() != null) {
             getConnector()?.sendData(
                 IcomRigConstant.sendOperationFrequency(
-                    ctrAddress, getCivAddress(), getFreq()
+                    ctrAddress, civAddress, getFreq()
                 )
             );
         }
     }
 
-    private fun getCommandEnd(data: ByteArray): Int {
-        for (i in data.indices) {
-            if (data[i] == 0xFD.toByte()) {
-                return i
-            }
-        }
-        return -1
-    }
+    override fun onRecv(data: ByteArray) { parser.feed(data) }
 
-    private fun getCommandHead(data: ByteArray): Int {
-        if (data.size < 2) return -1
-        for (i in 0..<data.size - 1) {
-            if (data[i] == 0xFE.toByte() && data[i + 1] == 0xFE.toByte()) {
-                return i
-            }
-        }
-        return -1
-    }
-
-    private fun analysisCommand(data: ByteArray) {
-        val headIndex = getCommandHead(data)
-        if (headIndex == -1) {
-            return
-        }
-
-        val icomCommand: IcomCommand?
-        if (headIndex == 0) {
-            icomCommand = IcomCommand.getCommand(ctrAddress, getCivAddress(), data)
-        } else {
-            val temp = ByteArray(data.size - headIndex)
-            System.arraycopy(data, headIndex, temp, 0, temp.size)
-            icomCommand = IcomCommand.getCommand(ctrAddress, getCivAddress(), temp)
-        }
-
-        if (icomCommand == null) {
-            return
-        }
-
-        when (icomCommand.getCommandID()) {
-            IcomRigConstant.CMD_SEND_FREQUENCY_DATA, IcomRigConstant.CMD_READ_OPERATING_FREQUENCY -> {
-                val freqTemp: Long = icomCommand.getFrequency(false)
-                if (freqTemp >= 500000 && freqTemp <= 250000000) {
-                    setFreq(freqTemp)
-                }
-            }
-
-            IcomRigConstant.CMD_SEND_MODE_DATA, IcomRigConstant.CMD_READ_OPERATING_MODE -> {
-                val retData = icomCommand.getData(false)
-                val mode = OperationMode.fromIcomDef(retData[0].toInt())
-
-                if (mode == null) {
-                    Log.w(TAG, "Invalid mode ${retData[0]} received from RIG, ignored")
-                } else setMode(mode)
-            }
-        }
-    }
-
-    override fun onRecv(data: ByteArray) {
-        val commandEnd = getCommandEnd(data)
-        if (commandEnd <= -1) {
-            val temp = ByteArray(dataBuffer.size + data.size)
-            System.arraycopy(dataBuffer, 0, temp, 0, dataBuffer.size)
-            System.arraycopy(data, 0, temp, dataBuffer.size, data.size)
-            dataBuffer = temp
-        } else {
-            val temp = ByteArray(dataBuffer.size + commandEnd + 1)
-            System.arraycopy(dataBuffer, 0, temp, 0, dataBuffer.size)
-            dataBuffer = temp
-            System.arraycopy(data, 0, dataBuffer, dataBuffer.size - commandEnd - 1, commandEnd + 1)
-        }
-        if (commandEnd != -1) {
-            analysisCommand(dataBuffer)
-        }
-        dataBuffer = ByteArray(0)
-        if (commandEnd <= -1 || commandEnd < data.size) {
-            val temp = ByteArray(data.size - commandEnd + 1)
-            for (i in 0..<data.size - commandEnd - 1) {
-                temp[i] = data[commandEnd + i + 1]
-            }
-            dataBuffer = temp
-        }
-    }
-
-    override fun getName(): String {
-        return "XIEGU 6100 series"
-    }
+    override fun getName(): String { return "XIEGU 6100 series" }
 
     init {
         Log.d(TAG, "XieGuRig 6100: Create.")
-        setCivAddress(civAddress)
-
         readStatusTimer?.schedule(readTask(), 1000, 1000)
     }
 
-    companion object {
-        private const val TAG = "XieGu6100Rig"
-    }
+    companion object { private const val TAG = "XieGu6100Rig" }
 }
