@@ -31,7 +31,6 @@ import androidx.lifecycle.LifecycleService
 import cn.rad1o.riglogger.rigctl.BaseRig
 import cn.rad1o.riglogger.rigctl.OnRigStateChanged
 import cn.rad1o.riglogger.rigctl.OperationMode
-import cn.rad1o.riglogger.rigctl.XieGuRig
 import cn.rad1o.riglogger.rigport.CableConnector
 import cn.rad1o.riglogger.rigport.CableSerialPort
 import com.google.gson.Gson
@@ -45,6 +44,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Locale
 import android.os.Handler
 import android.os.Looper
+import cn.rad1o.riglogger.rigctl.Yaesu39Rig
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 class RIGControlService : LifecycleService() {
     companion object {
@@ -58,6 +60,7 @@ class RIGControlService : LifecycleService() {
     private lateinit var notification: Notification
 
     private var rig: BaseRig? = null
+    private var cloudlogDebounceJob: Job? = null
     private var retries = DEFAULT_RETRIES
 
     private var clConfigured = false
@@ -105,7 +108,7 @@ class RIGControlService : LifecycleService() {
         )
 
         notification = NotificationCompat.Builder(this, CHANID)
-            .setContentTitle(getString(R.string.rig_connected))
+            .setContentTitle(getString(R.string.rig_connected, rig!!.getName()))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_logger_black_24dp)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -166,6 +169,14 @@ class RIGControlService : LifecycleService() {
         }
     }
 
+    fun scheduleCloudlogUpdate() {
+        cloudlogDebounceJob?.cancel() // 取消之前的任务
+        cloudlogDebounceJob = CoroutineScope(Dispatchers.Main).launch {
+            delay(1000) // 延迟 1 秒
+            updateCloudlogRadioInfo()
+        }
+    }
+
     private fun startForegroundService() {
         notificationManager =
             getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -202,12 +213,12 @@ class RIGControlService : LifecycleService() {
             return
         }
 
-        rig = XieGuRig(40)
+        rig = Yaesu39Rig()
         if (rig != null) {
             val cableConnector = CableConnector(
                 applicationContext,
                 ports[0],
-                19200,
+                38400,
                 rig
             )
 
@@ -260,13 +271,13 @@ class RIGControlService : LifecycleService() {
             rig!!.mutFreq.observe(this) { freq ->
                 Log.d(TAG, "Observed frequency change: $freq")
                 updateNotification()
-                updateCloudlogRadioInfo()
+                scheduleCloudlogUpdate()
             }
 
             rig!!.mutMode.observe(this) { mode ->
                 Log.d(TAG, "Observed mode change: ${OperationMode.toHumanReadable(mode)}")
                 updateNotification()
-                updateCloudlogRadioInfo()
+                scheduleCloudlogUpdate()
             }
         }
 

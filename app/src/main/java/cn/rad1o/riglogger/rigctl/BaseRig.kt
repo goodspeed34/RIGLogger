@@ -74,8 +74,6 @@ abstract class BaseRig {
 
     private var connector: BaseRigConnector? = null
     private var onRigStateChanged: OnRigStateChanged? = null
-    private var civAddr: Int = 0
-    private var baudRate: Int = 921600
 
     abstract fun getName(): String
     abstract fun isConnected(): Boolean

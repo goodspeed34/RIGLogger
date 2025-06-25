@@ -14,7 +14,7 @@
     <string name="serial_no_driver">串口没有与之对应的驱动。</string>
     <string name="serial_connect_no_access">无法访问串口。</string>
     <string name="serial_connect_failed">连接串口失败：</string>
-    <string name="rig_connected">已连接到电台</string>
+    <string name="rig_connected">已连接到 %1$s</string>
     <string name="rig_control_failed_due_to_network_problems">电台控制失败，网络问题</string>
     <string name="successfully_connected_to">成功连接到 %1$s</string>
     <string name="rig_control_failed_port_not_found">电台控制失败，无法找到端口</string>
@@ -24,4 +24,11 @@
     <string name="rig_control_won_t_upload_cloudlog_settings_not_found">电台控制不会上传信息：Cloudlog 未配置</string>
     <string name="rig_control_failed_cloudlog_returned">电台控制失败：Cloudlog 返回 %1$d</string>
     <string name="p_unable_to_find_a_url_to_visit_please_configure_it_in_settings_p"><![CDATA[<p>找不到要访问的 URL，请在程序配置页配置</p>]]></string>
+    <string name="rig">电台型号</string>
+    <string name="port">端口</string>
+    <string name="baudrate">波特率</string>
+    <string name="databits">数据位</string>
+    <string name="stopbits">停止位</string>
+    <string name="parity">校验位</string>
+    <string name="on_air">ON AIR</string>
 </resources>

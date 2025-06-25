@@ -13,7 +13,7 @@
     <string name="serial_no_driver">Serial port doesn\'t have a driver attached.</string>
     <string name="serial_connect_no_access">Could not access the serial port.</string>
     <string name="serial_connect_failed">Failed to connect to the serial port: </string>
-    <string name="rig_connected">RIG Connected</string>
+    <string name="rig_connected">Connected to %1$s</string>
     <string name="rig_control_failed_due_to_network_problems">RIG control failed, network problem</string>
     <string name="successfully_connected_to">Successfully connected to %1$s!</string>
     <string name="rig_control_failed_port_not_found">RIG control failed, port not found</string>

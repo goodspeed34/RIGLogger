@@ -24,12 +24,36 @@ enum class OperationMode(i: Int) {
     DV(3),
     USB(4),
     LSB(5),
-    CWL(6),
-    CWR(7),
-    RTTYL(8),
-    RTTYR(9);
+    SSB(6),
+    CW(7),
+    CWL(8),
+    CWR(9),
+    RTTY(10),
+    RTTYL(11),
+    RTTYR(12);
 
     companion object {
+        /**
+         * Convert the mode constants defined in Yaesu 3 protocol to the enum.
+         */
+        fun fromYaesu3Def(value: Char): OperationMode? {
+            return when (value) {
+                '1' -> SSB
+                '2' -> SSB
+                '3' -> CW
+                '4' -> FM
+                '5' -> AM
+                '6' -> RTTY
+                '7' -> CW
+                '8' -> USB
+                '9' -> RTTY
+                'B' -> FM
+                'C' -> USB
+                'D' -> AM
+                else -> null
+            }
+        }
+
         /**
          * Convert the mode constants defined in Icom CI-V protocol to the enum.
          */
@@ -56,10 +80,13 @@ enum class OperationMode(i: Int) {
                 AM -> "AM"
                 FM -> "FM"
                 DV -> "DV"
+                SSB -> "SSB"
                 USB -> "USB"
                 LSB -> "LSB"
+                CW -> "CW"
                 CWL -> "CW"
                 CWR -> "CWR"
+                RTTY -> "RTTY"
                 RTTYL -> "RTTY"
                 RTTYR -> "RTTYR"
                 else -> "Unknown"
@@ -80,6 +107,9 @@ enum class OperationMode(i: Int) {
                 CWR -> "CW"
                 RTTYL -> "RTTY"
                 RTTYR -> "RTTY"
+                SSB -> "SSB"
+                CW -> "CW"
+                RTTY -> "RTTY"
             }
         }
     }

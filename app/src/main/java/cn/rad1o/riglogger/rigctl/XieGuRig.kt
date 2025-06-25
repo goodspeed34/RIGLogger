@@ -64,9 +64,9 @@ class XieGuRig(private val civAddress: Int) : BaseRig() {
                 val retData = command.getData(false)
                 val mode = OperationMode.fromIcomDef(retData[0].toInt())
 
-                if (mode == null) {
-                    Log.w(TAG, "Invalid mode ${retData[0]} received from RIG, ignored")
-                } else setMode(mode)
+                if (mode != null) {
+                    setMode(mode)
+                }
             }
         }
     }
