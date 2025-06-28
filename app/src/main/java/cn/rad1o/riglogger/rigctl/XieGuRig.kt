@@ -43,6 +43,7 @@
 package cn.rad1o.riglogger.rigctl
 
 import android.util.Log
+import cn.rad1o.riglogger.rigport.SerialParameter
 import java.util.Timer
 import java.util.TimerTask
 
@@ -126,6 +127,8 @@ class XieGuRig(private val civAddress: Int) : BaseRig() {
         Log.d(TAG, "XieGuRig 6100: Create.")
         readStatusTimer?.schedule(readTask(), 1000, 1000)
     }
+
+    override val defaultSerialParameter = SerialParameter(19200, 8, 1, 0)
 
     companion object { private const val TAG = "XieGu6100Rig" }
 }

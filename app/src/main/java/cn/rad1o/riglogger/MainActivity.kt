@@ -34,6 +34,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavController
+import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
@@ -51,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private var bound = false
 
     private lateinit var badge: BadgeDrawable
+    private lateinit var navController: NavController
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(
@@ -112,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val navView: NavigationBarView = binding.navView as NavigationBarView
-        val navController =
+        navController =
             (supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)
                     as NavHostFragment).navController
 
@@ -128,6 +131,12 @@ class MainActivity : AppCompatActivity() {
         startService()
     }
 
+    fun redrawRigctl() {
+        if (navController.currentDestination?.id == R.id.navigation_rigctl) {
+            navController.navigate(R.id.navigation_rigctl)
+        }
+    }
+
     override fun onStart() {
         super.onStart()
 
@@ -138,7 +147,16 @@ class MainActivity : AppCompatActivity() {
             ) {
                 badge.backgroundColor = getColor(R.color.error)
                 viewModel.isServiceRunning = false
+
+                try {
+                    unbindService(connection)
+                } catch (_: Exception) {
+                    null
+                }
+
                 bound = false
+
+                redrawRigctl()
             }
         }, IntentFilter("cn.rad1o.riglogger.ACTION_SERVICE_STOPPED"), RECEIVER_EXPORTED)
 
@@ -149,12 +167,23 @@ class MainActivity : AppCompatActivity() {
             ) {
                 badge.backgroundColor = getColor(R.color.success)
                 viewModel.isServiceRunning = true
+
+                redrawRigctl()
             }
         }, IntentFilter("cn.rad1o.riglogger.ACTION_SERVICE_STARTED"), RECEIVER_EXPORTED)
     }
 
     fun startService() {
+        if (bound) {
+            try {
+                unbindService(connection)
+            }  catch (_: Exception) {
+                null
+            }
+            bound = false
+        }
         val intent = Intent(this, RIGControlService::class.java)
+        stopService(intent)
         bindService(intent, connection, BIND_AUTO_CREATE)
     }
 }

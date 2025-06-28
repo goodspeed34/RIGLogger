@@ -50,13 +50,13 @@ import com.hoho.android.usbserial.util.SerialInputOutputManager
 
 
 class CableConnector(
-    context: Context, serialPort: SerialPort, baudRate: Int,
+    context: Context, serialPort: SerialPort,
+    parameter: SerialParameter,
     val cableConnectedRig: BaseRig?
 ) : BaseRigConnector() {
 
     val cableSerialPort: CableSerialPort =
-        CableSerialPort(context, serialPort, baudRate, 8, 1, 0,
-            getOnConnectorStateChanged())
+        CableSerialPort(context, serialPort, parameter, getOnConnectorStateChanged())
 
     init {
         cableSerialPort.ioListener = object : SerialInputOutputManager.Listener {

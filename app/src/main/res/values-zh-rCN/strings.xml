@@ -31,4 +31,8 @@
     <string name="stopbits">停止位</string>
     <string name="parity">校验位</string>
     <string name="on_air">ON AIR</string>
+    <string name="rig_type">电台型号</string>
+    <string name="select_a_radio_type_to_connect">选择要连接到的电台。</string>
+    <string name="refresh">刷新</string>
+    <string name="rig_control_failed_invalid_rig">电台控制失败：</string>
 </resources>

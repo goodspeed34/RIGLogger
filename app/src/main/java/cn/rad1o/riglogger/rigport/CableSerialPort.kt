@@ -99,11 +99,8 @@ class CableSerialPort  {
     private lateinit var broadcastReceiver: BroadcastReceiver
     private var context: Context
 
+    private lateinit var serialParameter: SerialParameter
     private var vendorId = 0x0c26
-    private var baudRate = 19200
-    private var dataBits = 8
-    private var stopBits = 1
-    private var parity = 0
     private var portNum = 0
 
     private var usbSerialPort: UsbSerialPort? = null
@@ -118,16 +115,13 @@ class CableSerialPort  {
 
     constructor(
         mContext: Context, serialPort: SerialPort?,
-        baudRate: Int, dataBits: Int, stopBits: Int, parity: Int,
+        serialParameter: SerialParameter,
         connectorStateChanged: OnConnectorStateChanged
     ) {
         vendorId = serialPort!!.vendorId
-        portNum = serialPort!!.portNum
+        portNum = serialPort.portNum
 
-        this@CableSerialPort.baudRate = baudRate
-        this@CableSerialPort.dataBits = dataBits
-        this@CableSerialPort.stopBits = stopBits
-        this@CableSerialPort.parity = parity
+        this@CableSerialPort.serialParameter = serialParameter
 
         context = mContext
         this.onStateChanged = connectorStateChanged
@@ -226,11 +220,16 @@ class CableSerialPort  {
             Log.d(
                 TAG, java.lang.String.format(
                     "serial:baud rate：%d,data bits:%d,stop bits:%d,parity bit:%d",
-                    baudRate, dataBits, stopBits, parity
+                    serialParameter.baudRate, serialParameter.dataBits,
+                    serialParameter.stopBits, serialParameter.parity
                 )
             )
 
-            usbSerialPort?.setParameters(baudRate, dataBits, stopBits, parity)
+            usbSerialPort?.setParameters(
+                serialParameter.baudRate, serialParameter.dataBits,
+                serialParameter.stopBits, serialParameter.parity
+            )
+
             usbIoManager =
                 SerialInputOutputManager(usbSerialPort, object : SerialInputOutputManager.Listener {
                     override fun onNewData(data: ByteArray) {
@@ -349,14 +348,6 @@ class CableSerialPort  {
 
     fun setPortNum(portNum: Int) {
         this.portNum = portNum
-    }
-
-    fun getBaudRate(): Int {
-        return baudRate
-    }
-
-    fun setBaudRate(baudRate: Int) {
-        this.baudRate = baudRate
     }
 
     fun isConnected(): Boolean {

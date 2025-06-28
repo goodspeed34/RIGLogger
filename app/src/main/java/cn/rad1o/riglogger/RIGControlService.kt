@@ -44,7 +44,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Locale
 import android.os.Handler
 import android.os.Looper
-import cn.rad1o.riglogger.rigctl.Yaesu39Rig
+import cn.rad1o.riglogger.rigport.SerialParameter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
@@ -202,9 +202,18 @@ class RIGControlService : LifecycleService() {
     }
 
     private fun initRigConn() {
+        val prefs = applicationContext.getSharedPreferences("rigsvc_prefs", MODE_PRIVATE)
+
         val ports = CableSerialPort.listSerialPorts(applicationContext)
-        if (ports.isEmpty()) {
-            Log.e(TAG, "Failed to find a serial port to connect")
+        var port: CableSerialPort.SerialPort? = null
+        for (iport in ports) {
+            if (iport.toString() != prefs.getString("ser_desc", ""))
+                continue
+            port = iport
+        }
+
+        if (port == null) {
+            Log.e(TAG, "Failed to find the serial port to connect")
             Toast.makeText(applicationContext,
                 getString(R.string.rig_control_failed_port_not_found),
                 Toast.LENGTH_SHORT
@@ -213,72 +222,86 @@ class RIGControlService : LifecycleService() {
             return
         }
 
-        rig = Yaesu39Rig()
-        if (rig != null) {
-            val cableConnector = CableConnector(
+        rig = RigType.fromValue(prefs.getInt("rig_type", -1))?.getRigObj()
+
+        if (rig == null) {
+            Toast.makeText(applicationContext,
+                getString(R.string.rig_control_failed_invalid_rig),
+                Toast.LENGTH_SHORT
+            ).show()
+            shutdown()
+            return
+        }
+
+        val cableConnector =
+            CableConnector(
                 applicationContext,
-                ports[0],
-                38400,
+                port,
+                SerialParameter(
+                    prefs.getInt("ser_baudrate", 115200),
+                    prefs.getInt("ser_databits", 8),
+                    prefs.getInt("ser_stopbits", 1),
+                    prefs.getInt("parity", 0),
+                ),
                 rig
             )
 
-            cableConnector.connect()
-            rig!!.setConnector(cableConnector)
+        cableConnector.connect()
+        rig!!.setConnector(cableConnector)
 
-            cableConnector.setOnRigStateChanged(object : OnRigStateChanged {
-                override fun onDisconnected() {
-                    Toast.makeText(applicationContext,
-                        getString(R.string.disconnected, rig!!.getName()),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    shutdown()
-                }
-
-                override fun onConnected() {
-                    Toast.makeText(applicationContext,
-                        getString(R.string.successfully_connected_to, rig!!.getName()),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                override fun onRunError(message: String?) {
-                    var actualMessage = ""
-                    actualMessage = message ?: "?"
-
-                    Handler(Looper.getMainLooper()).post {
-                        Toast.makeText(
-                            applicationContext,
-                            getString(R.string.error_occurred_in, rig!!.getName(), actualMessage),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-
-                    shutdown()
-                }
-            })
-
-            if (rig?.isConnected() == true) {
-                Log.i(TAG, "RIG connected")
-            } else {
-                Log.i(TAG, "RIG not connected")
+        cableConnector.setOnRigStateChanged(object : OnRigStateChanged {
+            override fun onDisconnected() {
                 Toast.makeText(applicationContext,
-                    getString(R.string.failed_to_connect_to, rig!!.getName()),
+                    getString(R.string.disconnected, rig!!.getName()),
                     Toast.LENGTH_SHORT
                 ).show()
                 shutdown()
             }
 
-            rig!!.mutFreq.observe(this) { freq ->
-                Log.d(TAG, "Observed frequency change: $freq")
-                updateNotification()
-                scheduleCloudlogUpdate()
+            override fun onConnected() {
+                Toast.makeText(applicationContext,
+                    getString(R.string.successfully_connected_to, rig!!.getName()),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
 
-            rig!!.mutMode.observe(this) { mode ->
-                Log.d(TAG, "Observed mode change: ${OperationMode.toHumanReadable(mode)}")
-                updateNotification()
-                scheduleCloudlogUpdate()
+            override fun onRunError(message: String?) {
+                var actualMessage = ""
+                actualMessage = message ?: "?"
+
+                Handler(Looper.getMainLooper()).post {
+                    Toast.makeText(
+                        applicationContext,
+                        getString(R.string.error_occurred_in, rig!!.getName(), actualMessage),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                shutdown()
             }
+        })
+
+        if (rig!!.isConnected() == true) {
+            Log.i(TAG, "RIG connected")
+        } else {
+            Log.i(TAG, "RIG not connected")
+            Toast.makeText(applicationContext,
+                getString(R.string.failed_to_connect_to, rig!!.getName()),
+                Toast.LENGTH_SHORT
+            ).show()
+            shutdown()
+        }
+
+        rig!!.mutFreq.observe(this) { freq ->
+            Log.d(TAG, "Observed frequency change: $freq")
+            updateNotification()
+            scheduleCloudlogUpdate()
+        }
+
+        rig!!.mutMode.observe(this) { mode ->
+            Log.d(TAG, "Observed mode change: ${OperationMode.toHumanReadable(mode)}")
+            updateNotification()
+            scheduleCloudlogUpdate()
         }
 
         Toast.makeText(applicationContext,

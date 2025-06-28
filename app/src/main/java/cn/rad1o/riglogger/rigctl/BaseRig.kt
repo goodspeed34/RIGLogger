@@ -44,6 +44,7 @@ package cn.rad1o.riglogger.rigctl
 
 import androidx.lifecycle.MutableLiveData
 import cn.rad1o.riglogger.rigport.BaseRigConnector
+import cn.rad1o.riglogger.rigport.SerialParameter
 
 interface OnConnectReceiveData {
     fun onData(data: ByteArray)
@@ -80,6 +81,8 @@ abstract class BaseRig {
 
     abstract fun readStatus()
     abstract fun writeFrequency()
+
+    open val defaultSerialParameter: SerialParameter? = null
 
     abstract fun onRecv(data: ByteArray)
 
